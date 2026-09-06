@@ -17,15 +17,8 @@ Built with **FastAPI**, **SQLAlchemy**, and a modern **Tailwind CSS** dashboard.
 *Note: The free instance may take a few seconds to wake up from sleep.*
 
 ## 📸 Screenshots
-
-![Dashboard](screenshots/dashboard.png)  
-*Admin dashboard with real‑time stats and transaction table.*
-
-![QR Scanner](screenshots/scanner.png)  
-*QR scanner modal using camera.*
-
-![Inventory](screenshots/inventory.png)  
-*Inventory grid with QR codes.*
+> **📁 Check the [`screenshots`](./screenshots) folder** to view visual previews of the dashboard, QR scanner, and inventory grid.  
+> The folder contains images that showcase the application in action.
 
 ## 🛠️ Tech Stack
 - **Backend:** Python, FastAPI, Uvicorn, SQLAlchemy, Pydantic
