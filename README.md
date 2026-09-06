@@ -51,8 +51,7 @@ Tables:
 | GET  | /api/transactions | Get filtered transactions |
 | GET  | /api/export/csv | Export filtered CSV |
 ## 🌐 Live Demo
-[Click here to view the live app](https://library-project-w08d.onrender.com)
-## 🚀 Deployment
+[Click here to view the live app](https://library-project-w08d.onrender.com/)
 This project is deployed on Render.  
 To deploy your own instance:
 1. Push code to GitHub.
