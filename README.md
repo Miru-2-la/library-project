@@ -4,12 +4,12 @@ A full-stack library management system for issuing and returning books using QR 
 Built with FastAPI, SQLAlchemy, and a modern Tailwind CSS dashboard.
 
 ## Features
-- Real QR scanning – use your device camera to scan book QR codes.
-- Advanced filtering – filter transactions by status, date range, and member name.
-- Live statistics – doughnut chart and summary cards update in real time.
-- CSV export – download filtered transaction reports.
-- Responsive UI – glassmorphism design with animations.
-- Modular architecture – clean separation of database, models, and routes.
+- Real QR scanning â€“ use your device camera to scan book QR codes.
+- Advanced filtering â€“ filter transactions by status, date range, and member name.
+- Live statistics â€“ doughnut chart and summary cards update in real time.
+- CSV export â€“ download filtered transaction reports.
+- Responsive UI â€“ glassmorphism design with animations.
+- Modular architecture â€“ clean separation of database, models, and routes.
 
 ## Quick Start
 
@@ -50,3 +50,16 @@ Tables:
 | GET  | /api/qr/{book_id} | Get book QR code |
 | GET  | /api/transactions | Get filtered transactions |
 | GET  | /api/export/csv | Export filtered CSV |
+## ğŸŒ Live Demo
+[Click here to view the live app](https://library-project-ocx1.onrender.com)
+## ğŸš€ Deployment
+This project is deployed on Render.  
+To deploy your own instance:
+1. Push code to GitHub.
+2. Create a new Web Service on [Render](https://render.com).
+3. Set build command: `pip install -r requirements.txt`
+4. Set start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. Deploy and get the live URL.
+6. ## ğŸ“¸ Screenshots
+![Dashboard](screenshots/dashboard.png)
+![QR Scanner](screenshots/scanner.png)
