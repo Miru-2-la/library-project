@@ -17,7 +17,12 @@ Built with **FastAPI**, **SQLAlchemy**, and a modern **Tailwind CSS** dashboard.
 *Note: The free instance may take a few seconds to wake up from sleep.*
 
 ## 📸 Screenshots
-📁 **[View all screenshots](https://github.com/Miru-2-la/library-project/tree/main/SCREENSHOTS)** – See the dashboard, QR scanner, and inventory grid in action.
+
+📁 **[View all screenshots](https://github.com/Miru-2-la/library-project/tree/main/SCREENSHOTS)** – Browse the full set of images.
+
+**Dashboard:** Shows the admin dashboard with real-time statistics cards, inventory status chart, and transaction table.  
+**QR Scanner:** Demonstrates the camera-based QR scanning modal used for book identification.  
+**Inventory Grid:** Displays the collection of books with their QR codes and availability status.
 
 ## 🛠️ Tech Stack
 - **Backend:** Python, FastAPI, Uvicorn, SQLAlchemy, Pydantic
