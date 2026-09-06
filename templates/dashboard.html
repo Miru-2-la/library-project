@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html5-qrcode for real scanning -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+        }
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: #333; color: #fff;
+            text-align: center; border-radius: 8px; padding: 16px; position: fixed;
+            z-index: 100; left: 50%; bottom: 30px; transform: translateX(-50%);
+            font-size: 17px; opacity: 0; transition: opacity 0.5s, bottom 0.5s;
+        }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+        .modal {
+            display: none; position: fixed; z-index: 50; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 10% auto; padding: 20px;
+            border-radius: 12px; width: 90%; max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">L</div>
+                <h1 class="text-2xl font-bold tracking-tight">Library<span class="text-indigo-600">MS</span></h1>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="exportCSV()" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-semibold transition">
+                    <i class="fas fa-file-csv text-green-600"></i> Export CSV
+                </button>
+                <button onclick="openScanner()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-lg transition">
+                    <i class="fas fa-qrcode"></i> Scan QR
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-indigo-500">
+                <div class="flex justify-between items-start">
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Total Books</p><h3 class="text-3xl font-bold mt-1">{{ total_books }}</h3></div>
+                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i class="fas fa-book"></i></div>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-emerald-500">
+                <div class="flex justify-between items-start">
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Available</p><h3 class="text-3xl font-bold mt-1">{{ available_books }}</h3></div>
+                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600"><i class="fas fa-check"></i></div>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-orange-500">
+                <div class="flex justify-between items-start">
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Issued</p><h3 class="text-3xl font-bold mt-1">{{ issued_books }}</h3></div>
+                    <div class="p-2 bg-orange-50 rounded-lg text-orange-600"><i class="fas fa-hand-holding"></i></div>
+                </div>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-purple-500">
+                <div class="flex justify-between items-start">
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Members</p><h3 class="text-3xl font-bold mt-1">{{ total_members }}</h3></div>
+                    <div class="p-2 bg-purple-50 rounded-lg text-purple-600"><i class="fas fa-users"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Chart -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Inventory Status</h3>
+                    <canvas id="statsChart" height="200"></canvas>
+                </div>
+
+                <!-- Add Book -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4"><i class="fas fa-plus-circle text-indigo-500"></i> Add New Book</h3>
+                    <form id="addBookForm" class="space-y-3">
+                        <input type="text" id="title" placeholder="Book Title" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                        <input type="text" id="author" placeholder="Author" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                        <input type="text" id="isbn" placeholder="ISBN" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md">Add to Inventory</button>
+                    </form>
+                </div>
+
+                <!-- Register Member -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4"><i class="fas fa-user-plus text-purple-500"></i> Register Member</h3>
+                    <form id="addMemberForm" class="space-y-3">
+                        <input type="text" id="m_name" placeholder="Full Name" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition" required>
+                        <input type="text" id="m_id" placeholder="Student ID" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition" required>
+                        <input type="email" id="m_email" placeholder="Email Address" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition" required>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition shadow-md">Register Member</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Issue Panel -->
+                <div class="glass-panel p-6 rounded-2xl bg-gradient-to-r from-indigo-50 to-white">
+                    <h3 class="text-lg font-bold mb-4 text-indigo-900">Quick Issue / Return</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Select Book</label>
+                            <select id="issue_book_id" class="w-full p-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">-- Choose Book --</option>
+                                {% for book in all_books %}
+                                    {% if book.is_available %}
+                                    <option value="{{ book.id }}">{{ book.title }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Select Member</label>
+                            <select id="issue_member_id" class="w-full p-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">-- Choose Member --</option>
+                                {% for member in all_members %}
+                                <option value="{{ member.id }}">{{ member.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button onclick="issueBook()" class="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition shadow-md">
+                            <i class="fas fa-exchange-alt mr-2"></i> Issue Book
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Filters -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4"><i class="fas fa-filter text-gray-500"></i> Filter Transactions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+                            <select id="filter_status" class="w-full p-2 border rounded-lg bg-gray-50">
+                                <option value="All">All</option>
+                                <option value="Issued">Issued</option>
+                                <option value="Returned">Returned</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Start Date</label>
+                            <input type="date" id="filter_start" class="w-full p-2 border rounded-lg bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">End Date</label>
+                            <input type="date" id="filter_end" class="w-full p-2 border rounded-lg bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Member Name</label>
+                            <input type="text" id="filter_member" placeholder="Search name" class="w-full p-2 border rounded-lg bg-gray-50">
+                        </div>
+                        <div class="md:col-span-4 flex justify-end gap-2">
+                            <button onclick="applyFilters()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Apply</button>
+                            <button onclick="clearFilters()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions Table -->
+                <div class="glass-panel p-6 rounded-2xl overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold">Transaction History</h3>
+                        <span id="recordCount" class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500"></span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full leading-normal">
+                            <thead>
+                                <tr>
+                                    <th class="px-5 py-3 border-b-2 border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">Book</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">Member</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">Issue Date</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                    <th class="px-5 py-3 border-b-2 border-gray-100 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Inventory Grid with QR -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Inventory & QR Codes</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {% for book in all_books %}
+                        <div class="border border-gray-100 p-4 rounded-xl bg-white hover:shadow-lg transition">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 truncate w-32">{{ book.title }}</h4>
+                                    <p class="text-xs text-gray-500">{{ book.author }}</p>
+                                </div>
+                                <img src="/api/qr/{{ book.id }}" alt="QR" class="w-12 h-12 object-contain cursor-pointer hover:scale-110 transition">
+                            </div>
+                            <div class="flex justify-between items-center mt-3">
+                                <span class="text-xs font-bold px-2 py-1 rounded {% if book.is_available %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    {% if book.is_available %}Available{% else %}Issued{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div id="scannerModal" class="modal">
+        <div class="modal-content text-center relative">
+            <span class="absolute top-4 right-4 text-2xl cursor-pointer text-gray-400 hover:text-gray-800" onclick="closeScanner()">&times;</span>
+            <h2 class="text-2xl font-bold mb-4">Scan Book QR</h2>
+            <div id="reader"></div>
+            <p class="text-sm text-gray-500 mt-4">Point your camera at a book's QR code</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast">Operation Successful</div>
+
+    <script>
+        // Global state
+        let currentFilter = 'All';
+        let html5QrCode;
+
+        // --- Chart.js ---
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Available', 'Issued'],
+                datasets: [{
+                    data: [{{ available_books }}, {{ issued_books }}],
+                    backgroundColor: ['#10b981', '#f97316'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // --- Toast ---
+        function popToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = 'show';
+            setTimeout(() => toast.className = toast.className.replace('show', ''), 3000);
+        }
+
+        // --- POST helper ---
+        async function handlePost(url, data, successMsg) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    popToast(successMsg);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    popToast('Error: ' + (result.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                popToast('Connection error');
+            }
+        }
+
+        // --- Add Book ---
+        document.getElementById('addBookForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            handlePost('/api/books', {
+                title: document.getElementById('title').value,
+                author: document.getElementById('author').value,
+                isbn: document.getElementById('isbn').value
+            }, 'Book added successfully!');
+        });
+
+        // --- Add Member ---
+        document.getElementById('addMemberForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            handlePost('/api/members', {
+                name: document.getElementById('m_name').value,
+                student_id: document.getElementById('m_id').value,
+                email: document.getElementById('m_email').value
+            }, 'Member registered!');
+        });
+
+        // --- Issue Book ---
+        function issueBook() {
+            const bookId = document.getElementById('issue_book_id').value;
+            const memberId = document.getElementById('issue_member_id').value;
+            if (!bookId || !memberId) {
+                popToast('Please select both book and member');
+                return;
+            }
+            handlePost('/api/issue', { book_id: parseInt(bookId), member_id: parseInt(memberId) }, 'Book issued!');
+        }
+
+        // --- Return Book ---
+        async function returnBook(id) {
+            if (confirm('Confirm return?')) {
+                try {
+                    const res = await fetch(`/api/return/${id}`, { method: 'POST' });
+                    if (res.ok) {
+                        popToast('Book returned!');
+                        fetchTxns(); // refresh table
+                    } else {
+                        const err = await res.json();
+                        popToast('Error: ' + (err.detail || 'Failed'));
+                    }
+                } catch (e) {
+                    popToast('Connection error');
+                }
+            }
+        }
+
+        // --- Transaction Loading ---
+        async function fetchTxns() {
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">Loading...</td></tr>';
+
+            const params = new URLSearchParams();
+            const status = document.getElementById('filter_status').value;
+            const start = document.getElementById('filter_start').value;
+            const end = document.getElementById('filter_end').value;
+            const member = document.getElementById('filter_member').value;
+            if (status && status !== 'All') params.append('status', status);
+            if (start) params.append('start_date', start);
+            if (end) params.append('end_date', end);
+            if (member) params.append('member_name', member);
+
+            try {
+                const res = await fetch(`/api/transactions?${params.toString()}`);
+                const data = await res.json();
+                document.getElementById('recordCount').innerText = `${data.length} records`;
+                tbody.innerHTML = '';
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">No records found.</td></tr>';
+                    return;
+                }
+                data.forEach(t => {
+                    const row = `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-5 py-4 border-b border-gray-100 bg-white text-sm">
+                                <p class="text-gray-900 font-bold">${t.book_title}</p>
+                                <p class="text-gray-500 text-xs">${t.book_isbn}</p>
+                            </td>
+                            <td class="px-5 py-4 border-b border-gray-100 bg-white text-sm">
+                                <p class="text-gray-900">${t.member_name}</p>
+                                <p class="text-gray-500 text-xs">${t.member_student_id}</p>
+                            </td>
+                            <td class="px-5 py-4 border-b border-gray-100 bg-white text-sm">
+                                <p class="text-gray-900">${t.issue_date}</p>
+                            </td>
+                            <td class="px-5 py-4 border-b border-gray-100 bg-white text-sm">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${t.status === 'Issued' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}">${t.status}</span>
+                            </td>
+                            <td class="px-5 py-4 border-b border-gray-100 bg-white text-sm">
+                                ${t.status === 'Issued' ? `<button onclick="returnBook(${t.id})" class="text-indigo-600 hover:text-indigo-900 font-bold text-xs border border-indigo-200 px-3 py-1 rounded hover:bg-indigo-50 transition">Return</button>` : '<span class="text-gray-400 text-xs"><i class="fas fa-check"></i> Done</span>'}
+                            </td>
+                        </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch (e) {
+                console.error(e);
+                popToast('Failed to load transactions');
+            }
+        }
+
+        function applyFilters() {
+            fetchTxns();
+        }
+
+        function clearFilters() {
+            document.getElementById('filter_status').value = 'All';
+            document.getElementById('filter_start').value = '';
+            document.getElementById('filter_end').value = '';
+            document.getElementById('filter_member').value = '';
+            fetchTxns();
+        }
+
+        // --- CSV Export ---
+        function exportCSV() {
+            const params = new URLSearchParams();
+            const status = document.getElementById('filter_status').value;
+            const start = document.getElementById('filter_start').value;
+            const end = document.getElementById('filter_end').value;
+            const member = document.getElementById('filter_member').value;
+            if (status && status !== 'All') params.append('status', status);
+            if (start) params.append('start_date', start);
+            if (end) params.append('end_date', end);
+            if (member) params.append('member_name', member);
+            window.location.href = `/api/export/csv?${params.toString()}`;
+        }
+
+        // --- Real QR Scanner ---
+        function openScanner() {
+            document.getElementById('scannerModal').style.display = 'block';
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error(err);
+                popToast('Camera access denied or not available');
+            });
+        }
+
+        function closeScanner() {
+            document.getElementById('scannerModal').style.display = 'none';
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    console.log("Scanner stopped");
+                }).catch(err => console.error(err));
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            // decodedText is the book ID
+            const bookId = parseInt(decodedText);
+            if (isNaN(bookId)) {
+                popToast('Invalid QR code');
+                return;
+            }
+            closeScanner();
+            // Auto-select the book in the issue dropdown
+            const select = document.getElementById('issue_book_id');
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === String(bookId)) {
+                    select.selectedIndex = i;
+                    popToast(`Book detected! ID: ${bookId}`);
+                    return;
+                }
+            }
+            popToast('Book not found in available inventory');
+        }
+
+        function onScanFailure(error) {
+            // Ignore errors, keep scanning
+        }
+
+        // Initial load
+        fetchTxns();
+    </script>
+</body>
+</html>
