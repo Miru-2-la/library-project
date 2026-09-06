@@ -17,7 +17,7 @@ Built with **FastAPI**, **SQLAlchemy**, and a modern **Tailwind CSS** dashboard.
 *Note: The free instance may take a few seconds to wake up from sleep.*
 
 ## 📸 Screenshots
-> **📁 Check the [`screenshots`](./screenshots) folder** to view visual previews of the dashboard, QR scanner, and inventory grid.  
+> **📁 Check the [`screenshots`](./SCREENSHOTS) folder** to view visual previews of the dashboard, QR scanner, and inventory grid.  
 > The folder contains images that showcase the application in action.
 
 ## 🛠️ Tech Stack
