@@ -14,16 +14,10 @@ Built with **FastAPI**, **SQLAlchemy**, and a modern **Tailwind CSS** dashboard.
 ## 🌐 Live Demo
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-brightgreen)](https://library-project-w08d.onrender.com/)
 
+*Note: The free instance may take a few seconds to wake up from sleep.*
+
 ## 📸 Screenshots
-
-![Dashboard](screenshots/dashboard.png)  
-*Admin dashboard with real‑time stats and transaction table.*
-
-![QR Scanner](screenshots/scanner.png)  
-*QR scanner modal using camera.*
-
-![Inventory](screenshots/inventory.png)  
-*Inventory grid with QR codes.*
+📁 **[View all screenshots](https://github.com/Miru-2-la/library-project/tree/main/SCREENSHOTS)** – See the dashboard, QR scanner, and inventory grid in action.
 
 ## 🛠️ Tech Stack
 - **Backend:** Python, FastAPI, Uvicorn, SQLAlchemy, Pydantic
