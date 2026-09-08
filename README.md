@@ -1,4 +1,4 @@
-# 📚 Nexus Campus Library System
+# 📚 Nexus Campus Library System.
 
 A full‑stack library management system for issuing and returning books using **QR code scanning**.  
 Built with **FastAPI**, **SQLAlchemy**, and a modern **Tailwind CSS** dashboard.
